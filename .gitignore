@@ -1,0 +1,60 @@
+# --- Dependencies and Environments ---
+# Common virtual environment names
+venv/
+.venv/
+env/
+ENV/
+bin/
+lib/
+lib64/
+include/
+share/
+*.bak/
+
+# Package managers
+pyenv/
+.python-version
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.nox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+Pipfile.lock
+uv.lock
+
+# --- Compiled files ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Custom Ignores ---
+# Ignore all PDF files
+*.pdf
+
+# --- Distribution / packaging ---
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.installed.cfg
+*.egg-info/
+*.egg
+MANIFEST
+
+# --- IDEs and OS files ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+*.csv
+FYP_Baseline_Model/
