@@ -1,0 +1,16 @@
+CENTRALIZED BASELINE MODEL METRICS
+==================================
+Accuracy : 0.9950
+Precision: 0.9950
+Recall   : 0.9950
+F1-Score : 0.9950
+
+               precision    recall  f1-score   support
+
+     Poor (0)       1.00      0.99      1.00      2000
+  Average (1)       1.00      0.99      1.00      2000
+Excellent (2)       0.99      1.00      0.99      2000
+
+     accuracy                           0.99      6000
+    macro avg       1.00      0.99      1.00      6000
+ weighted avg       1.00      0.99      1.00      6000

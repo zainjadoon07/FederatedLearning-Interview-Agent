@@ -1,0 +1,26 @@
+ADVERSARIAL BASELINE EVALUATION
+=================================================================
+Accuracy : 0.9871
+Precision: 0.9880
+Recall   : 0.9871
+F1-Score : 0.9873
+
+Per-Strategy Results:
+  Excellent (original answer)            Excellent           Poor:2, Excellent:298   99.3%
+  Poor (random other answer)                 Poor           Poor:296, Excellent:4   98.7%
+  Average (first quarter only)            Average                     Average:300  100.0%
+  Poor (word-scrambled answer)               Poor           Poor:294, Excellent:6   98.0%
+  Poor (keyword stuffing)                    Poor           Poor:299, Excellent:1   99.7%
+  Average (filler-padded answer)          Average       Average:289, Excellent:11   96.3%
+  Poor (cross-domain swap)                   Poor           Poor:297, Excellent:3   99.0%
+
+Full Report:
+               precision    recall  f1-score   support
+
+     Poor (0)       1.00      0.99      0.99      1200
+  Average (1)       1.00      0.98      0.99       600
+Excellent (2)       0.92      0.99      0.96       300
+
+     accuracy                           0.99      2100
+    macro avg       0.97      0.99      0.98      2100
+ weighted avg       0.99      0.99      0.99      2100
