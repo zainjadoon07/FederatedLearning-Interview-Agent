@@ -7,7 +7,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # JWT Configuration
 # In production, ALWAYS load SECRET_KEY from .env
-SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-development-key")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 Hours
 
