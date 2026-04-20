@@ -1,14 +1,15 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from database import connect_to_mongo, close_mongo_connection, db
-from routes import auth, templates
+from routes import auth, templates, sessions
+from services.ai_service import ai_evaluator
 
-# Lifespan context manager ensures early database connection on startup
-# and clean disconnection on shutdown.
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- Startup ---
     await connect_to_mongo()
+    ai_evaluator.load_model()
     yield
     # --- Shutdown ---
     await close_mongo_connection()
@@ -23,6 +24,7 @@ app = FastAPI(
 # --- Register Routers ---
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Interview Templates"])
+app.include_router(sessions.router, prefix="/api/sessions", tags=["Candidate Interview Sessions"])
 
 @app.get("/")
 async def health_check():

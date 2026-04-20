@@ -43,3 +43,19 @@ class InterviewTemplateResponse(BaseModel):
     total_questions: int
     shareable_link: str
     created_at: str
+
+# -------------------------
+# Interview Session Schemas
+# -------------------------
+class SessionStart(BaseModel):
+    interview_id: str
+    candidate_name: str
+    candidate_email: str
+
+class BatchAnswersSubmit(BaseModel):
+    session_id: str
+    answers: list[str]
+
+class InterviewSessionStartResponse(BaseModel):
+    session_id: str
+    all_questions: list[str]
