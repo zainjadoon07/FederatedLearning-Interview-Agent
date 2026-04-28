@@ -25,6 +25,12 @@ class CompanyDelete(BaseModel):
     # Enforces password matching before deletion
     password: str
 
+class CompanySettings(BaseModel):
+    passing_threshold: int = 70               # Default: must score 70% to pass
+    ai_strictness: str = "strict"             # Options: lenient, strict, hyper-strict
+    theme_color: str = "#2563EB"              # For frontend branding (blue default)
+    company_site_url: str | None = None
+
 # -------------------------
 # Interview Template Schemas
 # -------------------------
@@ -52,9 +58,15 @@ class SessionStart(BaseModel):
     candidate_name: str
     candidate_email: str
 
+class CheatingFlags(BaseModel):
+    tab_switches: int = 0
+    copy_paste_attempts: int = 0
+    time_taken_seconds: int = 0
+
 class BatchAnswersSubmit(BaseModel):
     session_id: str
     answers: list[str]
+    cheating_flags: CheatingFlags | None = None
 
 class InterviewSessionStartResponse(BaseModel):
     session_id: str

@@ -1,49 +1,77 @@
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
-from schemas import SessionStart, BatchAnswersSubmit, InterviewSessionStartResponse
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks, File, UploadFile, Form
+from schemas import BatchAnswersSubmit, InterviewSessionStartResponse
 from database import db
 from services.langgraph_agent import generate_batch_questions, evaluate_batch_interview
 import uuid
+import PyPDF2
+from io import BytesIO
 from datetime import datetime, timezone
 
 router = APIRouter()
 
 @router.post("/start", response_model=InterviewSessionStartResponse)
-async def start_interview(payload: SessionStart):
+async def start_interview(
+    interview_id: str = Form(...),
+    candidate_name: str = Form(...),
+    candidate_email: str = Form(...),
+    resume: UploadFile = File(None)   # Optional Resume upload!
+):
     """
-    Candidate opens the link and submits their Form (Email & Name).
-    It generates all questions upfront and returns the ENTIRE array to the frontend.
+    Candidate opens the link and submits their Form. If a PDF resume is attached,
+    we extract the text and dynamically inject it into the Gemini prompt!
     """
-    template = await db.db.templates.find_one({"interview_id": payload.interview_id})
+    template = await db.db.templates.find_one({"interview_id": interview_id})
     if not template:
         raise HTTPException(status_code=404, detail="Interview template not found")
         
+    existing_session = await db.db.sessions.find_one({
+        "interview_id": interview_id,
+        "candidate_email": candidate_email
+    })
+    if existing_session:
+        raise HTTPException(status_code=400, detail="A session with this email already exists for this interview.")
+        
     session_id = str(uuid.uuid4())
     
-    # 1. Generate ALL questions securely at once
+    # 1. OPTIONAL: Parse the PDF Resume if they uploaded one
+    resume_text = None
+    if resume and resume.filename.endswith(".pdf"):
+        try:
+            pdf_reader = PyPDF2.PdfReader(BytesIO(await resume.read()))
+            resume_text = ""
+            for page in pdf_reader.pages:
+                resume_text += page.extract_text()
+        except Exception as e:
+            print(f"Failed to parse resume: {e}")
+            # If it fails, we gracefully continue without it
+            resume_text = None
+    
+    # 2. Generate questions securely (Now dynamically contextualized if resume_text exists!)
     try:
         questions_array = generate_batch_questions(
             role=template["role"],
             skills=template["skills_required"],
             difficulty=template["difficulty"],
-            total=template["total_questions"]
+            total=template["total_questions"],
+            resume_text=resume_text
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Question Generation Failed: {str(e)}")
         
-    # 2. Save session strictly once at initialization
+    # 3. Save session locally
     session_doc = {
         "session_id": session_id,
-        "interview_id": payload.interview_id,
-        "candidate_name": payload.candidate_name,
-        "candidate_email": payload.candidate_email,
+        "interview_id": interview_id,
+        "candidate_name": candidate_name,
+        "candidate_email": candidate_email,
+        "company_id": template["company_id"],
         "status": "in_progress",
-        "questions": questions_array,   # The pre-baked list
-        "answers": [],                  # Empty array; the frontend will hold answers locally
+        "questions": questions_array, 
+        "answers": [],                  
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.db.sessions.insert_one(session_doc)
     
-    # 3. Hand everything over to React!
     return {
         "session_id": session_id,
         "all_questions": questions_array
@@ -53,9 +81,8 @@ async def start_interview(payload: SessionStart):
 @router.post("/submit_all")
 async def submit_all_answers(payload: BatchAnswersSubmit, background_tasks: BackgroundTasks):
     """
-    Called EXACTLY ONCE at the very end of the interview.
-    The React frontend passes the array of all the applicant's answers.
-    We save them to DB and trigger the Background Evaluation.
+    Final Submission. Checks strict lengths and triggers background evaluator.
+    Absorbs cheating metrics (tab_switches, time_taken) collected by the frontend!
     """
     session = await db.db.sessions.find_one({"session_id": payload.session_id})
     if not session:
@@ -65,21 +92,22 @@ async def submit_all_answers(payload: BatchAnswersSubmit, background_tasks: Back
         raise HTTPException(status_code=400, detail="Interview is already finished!")
         
     if len(payload.answers) != len(session["questions"]):
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Expected {len(session['questions'])} answers, but received {len(payload.answers)}."
-        )
+        raise HTTPException(status_code=400, detail=f"Expected {len(session['questions'])} answers.")
         
-    # 1. Update the DB exactly once with all the answers
+    # Inject the cheating analytics metrics collected from the React JS Window directly into their permanent record!
+    cheating_data = payload.cheating_flags.dict() if payload.cheating_flags else None
+
+    # Update DB exactly once with answers AND metrics
     await db.db.sessions.update_one(
         {"session_id": payload.session_id},
         {"$set": {
             "answers": payload.answers,
+            "cheating_flags": cheating_data,
             "status": "analyzing"
         }}
     )
     
-    # 2. 💥 Fire the heavy AI evaluation silently into a background runner thread!
+    # Fire evaluator
     background_tasks.add_task(evaluate_batch_interview, payload.session_id, session["questions"], payload.answers)
     
-    return {"message": "All answers submitted successfully! Interview evaluation implies is running in the background."}
+    return {"message": "All answers submitted successfully! Evaluation is running in the background."}
