@@ -57,7 +57,7 @@ This document outlines the complete REST API architecture for the Backend system
   1. Checks local state to enforce the **Anti-Duplicate Data Lock**.
   2. If a PDF is attached, physical buffers are streamed into the `PyPDF2` engine for raw text extraction.
   3. The extracted text is injected procedurally into a highly specialized LangChain System Prompt.
-  4. Triggers `gemini-2.5-flash`, forcing it to adhere to a strict Pydantic JSON array schema.
+  4. Triggers `llama-3.1-8b-instant` via Groq, forcing it to adhere to a strict JSON array schema.
   5. Stores the array locally into the `sessions` DB to ensure 0ms latency for the frontend.
 - **Form Fields:** 
   - `interview_id`: (string) e.g., "8b89c375-..."

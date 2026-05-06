@@ -39,6 +39,11 @@ __pycache__/
 # Ignore all PDF files
 *.pdf
 
+# --- Secrets / Environment Variables ---
+.env
+**/.env
+*.env
+
 # --- Distribution / packaging ---
 build/
 develop-eggs/
